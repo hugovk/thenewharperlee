@@ -17,6 +17,8 @@ import webbrowser
 import yaml
 from wordnik import swagger, WordsApi
 
+import book_cover
+
 
 def load_yaml(filename):
     """
@@ -40,8 +42,8 @@ def load_yaml(filename):
     return data
 
 
-def tweet_it(string, credentials):
-    """ Tweet string using credentials """
+def tweet_it(string, credentials, image=None):
+    """ Tweet string and image using credentials """
     if len(string) <= 0:
         return
 
@@ -59,7 +61,28 @@ def tweet_it(string, credentials):
     if args.test:
         print("(Test mode, not actually tweeting)")
     else:
-        result = t.statuses.update(status=string)
+
+        if image:
+            print("Upload image")
+
+            # Send images along with your tweets.
+            # First just read images from the web or from files the regular way
+            with open(image, "rb") as imagefile:
+                imagedata = imagefile.read()
+            # TODO dedupe auth=OAuth(...)
+            t_up = twitter.Twitter(domain='upload.twitter.com',
+                                   auth=twitter.OAuth(
+                                       credentials['access_token'],
+                                       credentials['access_token_secret'],
+                                       credentials['consumer_key'],
+                                       credentials['consumer_secret']))
+            id_img = t_up.media.upload(media=imagedata)["media_id_string"]
+        else:
+            id_img = None  # Does t.statuses.update work with this?
+
+        result = t.statuses.update(
+            status=string, media_ids=id_img)
+
         url = "http://twitter.com/" + \
             result['user']['screen_name'] + "/status/" + result['id_str']
         print("Tweeted:\n" + url)
@@ -132,7 +155,7 @@ def thenewharperlee():
         noun_syllables = 2
     noun = get_random_word("noun", noun_syllables, skip_plurals=True)
 
-    book = "{0} {1} {2}".format(first, verb.title(), p.a(noun.title()))
+    title = "{0} {1} {2}".format(first, verb.title(), p.a(noun.title()))
 
     intro = random.choice([
         "Announcing Harper Lee's new novel: {0}",
@@ -182,18 +205,21 @@ def thenewharperlee():
         "Harper Lee's new novel {0} is a bolt from the blue",
         ])
 
-    output = intro.format(book)
+    output = intro.format(title)
 
     print()
     print(output)
     print()
-    return output
+    return output, title
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Harper Lee's next book is called...",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        '-o', '--outfile', default="C:/stufftodelete/book_cover.png",
+        help="Book cover image filename")
     parser.add_argument(
         '-y', '--yaml',
         # default='/Users/hugo/Dropbox/bin/data/thenewharperlee.yaml',
@@ -214,8 +240,10 @@ if __name__ == "__main__":
 
     p = inflect.engine()
 
-    tweet = thenewharperlee()
+    tweet, title = thenewharperlee()
 
-    tweet_it(tweet, credentials)
+    book_cover.book_cover(title, "Harper Lee", args.outfile)
+
+    tweet_it(tweet, credentials, args.outfile)
 
 # End of file
