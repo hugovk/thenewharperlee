@@ -5,25 +5,66 @@ Knock up a book cover
 """
 from __future__ import print_function
 import argparse
+import hashlib
 import random
+import struct
 from PIL import Image, ImageFont, ImageDraw
-
-
-COLOUR_SCHEMES = [
-    ["black", "white"],
-    ["#FA6900", "white"],
-    ["#AA3939", "white"],
-    ["#2D882D", "white"],
-]
 
 
 FONTS = [
     "ANTQUAB.TTF",
     "arial.ttf",
+    "arialbd.ttf",
     "BOOKOS.TTF",
-    "cour.ttf",
+    "BOOKOSB.TTF",
     "calibri.ttf",
+    "calibrib.ttf",
+    "times.ttf",
+    "cour.ttf",
+    "courbd.ttf",
+    "georgia.ttf",
+    "georgiab.ttf",
+    "timesbd.ttf",
 ]
+
+
+def dopplr(name):
+    """
+    Take the MD5 digest of a name,
+    convert it to hex and take the
+    first 6 characters as an RGB value.
+    """
+    return "#" + hashlib.sha224(name).hexdigest()[:6]
+
+
+def foreground_colour(background_colour):
+    """
+    For a given background colour, return black or white for the text
+    http://stackoverflow.com/a/946734/724176
+    """
+    # Get RGB values
+    background_colour = background_colour.lstrip("#")
+    background_colour = struct.unpack('BBB', background_colour.decode('hex'))
+    r = background_colour[0]
+    g = background_colour[1]
+    b = background_colour[2]
+    print(r, g, b)
+
+    # The perceived brightness of the individual primaries red, green, and blue
+    # are not identical. The quickest advice I can give is to use the
+    # traditional formula to convert RGB to gray - R*0.299 + G*0.587 + B*0.114.
+    # There are lots of other formulas.
+    grey = r*0.299 + g*0.587 + b*0.144
+
+    # The gamma curve applied to displays makes the middle gray value higher
+    # than you'd expect. This is easily solved by using 186 as the middle value
+    # rather than 128. Anything less than 186 should use white text, anything
+    # greater than 186 should use black text.
+    print(grey)
+    if grey < 186:
+        return "white"
+    else:
+        return "black"
 
 
 def largest_font_that_fits(draw, font_file, text, cover_width):
@@ -48,9 +89,6 @@ def book_cover(title, author, outfile=None):
         title = title.upper()
         author = author.upper()
 
-    colours = random.choice(COLOUR_SCHEMES)
-    print(colours)
-    # random.shuffle(colours)
     font_file = random.choice(FONTS)
     print(font_file)
 
@@ -58,7 +96,11 @@ def book_cover(title, author, outfile=None):
     cover_height = 600
     offset = 50
 
-    img = Image.new("RGB", (cover_width, cover_height), color=colours[0])
+    bg_colour = dopplr(title)
+    fg_colour = foreground_colour(bg_colour)
+    print(bg_colour, fg_colour)
+
+    img = Image.new("RGB", (cover_width, cover_height), color=bg_colour)
     draw = ImageDraw.Draw(img)
 
     # Title
@@ -68,7 +110,7 @@ def book_cover(title, author, outfile=None):
     x = (cover_width - text_x)/2
     y = offset
     draw.multiline_text((x, y), title, font=font, align="center",
-                        fill=colours[1])
+                        fill=fg_colour)
 
     # Author
     font = largest_font_that_fits(draw, font_file, author, cover_width)
@@ -76,7 +118,7 @@ def book_cover(title, author, outfile=None):
     x = (cover_width - text_x)/2
     y = cover_height - text_y - offset
     draw.multiline_text((x, y), author, font=font, align="center",
-                        fill=colours[1])
+                        fill=fg_colour)
     # img.show()
     if outfile:
         img.save(outfile)
