@@ -43,6 +43,11 @@ def book_cover(title, author, outfile=None):
     k = title.rfind(" ")
     title = title[:k] + "\n" + title[k+1:]
 
+    # 50% chance to capitalise
+    if random.randrange(2):
+        title = title.upper()
+        author = author.upper()
+
     colours = random.choice(COLOUR_SCHEMES)
     print(colours)
     # random.shuffle(colours)
