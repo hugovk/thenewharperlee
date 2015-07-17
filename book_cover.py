@@ -69,14 +69,37 @@ def foreground_colour(background_colour):
 
 def largest_font_that_fits(draw, font_file, text, cover_width):
     """ Find the largest-sized font that'll fit this text on this cover  """
-    text_x = cover_width + 1
+    text_w = cover_width + 1
     font_size = 110
     padding = 20
-    while(text_x + padding > cover_width):
+    while(text_w + padding > cover_width):
         font_size -= 10
         font = ImageFont.truetype(font_file, font_size)
-        text_x, text_y = draw.textsize(text, font)
+        text_w, text_h = draw.textsize(text, font)
     return font
+
+
+def get_an_image(text):
+    """ Get some public domain image for text """
+
+    # Get the second or fourth word
+    index = random.choice([1, 3])
+    text = text.split()[index]
+
+    from flickr_search_downloadr import flickr_search_downloadr
+
+    filename = flickr_search_downloadr(text,
+                                       tags=None,
+                                       user_id="internetarchivebookimages",
+                                       sort="relevance",
+                                       quantity=1,
+                                       number=None,
+                                       size="m",
+                                       title=None,
+                                       noclobber=True,
+                                       outdir="E:/stufftodelete")
+    img = Image.open(filename[0])
+    return img
 
 
 def book_cover(title, author, outfile=None):
@@ -106,19 +129,32 @@ def book_cover(title, author, outfile=None):
     # Title
     font = largest_font_that_fits(draw, font_file, title, cover_width)
 
-    text_x, text_y = draw.textsize(title, font)
-    x = (cover_width - text_x)/2
+    text_w, text_h = draw.textsize(title, font)
+    x = (cover_width - text_w)/2
     y = offset
     draw.multiline_text((x, y), title, font=font, align="center",
                         fill=fg_colour)
+    bottom_of_top_text = y + text_h
 
     # Author
     font = largest_font_that_fits(draw, font_file, author, cover_width)
-    text_x, text_y = draw.textsize(author, font)
-    x = (cover_width - text_x)/2
-    y = cover_height - text_y - offset
+    text_w, text_h = draw.textsize(author, font)
+    x = (cover_width - text_w)/2
+    y = cover_height - text_h - offset
     draw.multiline_text((x, y), author, font=font, align="center",
                         fill=fg_colour)
+    top_of_bottom_text = y
+
+    try:
+        img2 = get_an_image(title)
+        w, h = img2.size
+        x = cover_width/2 - w/2
+        y_gap = top_of_bottom_text - bottom_of_top_text
+        y = bottom_of_top_text + y_gap/2 - h/2
+        img.paste(img2, (x, y))
+    except Exception as e:
+        print(str(e))
+
     # img.show()
     if outfile:
         img.save(outfile)
