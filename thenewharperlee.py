@@ -110,20 +110,18 @@ def get_random_word(part_of_speech, syllables=None, skip_plurals=False):
     words = get_random_words_from_wordnik(part_of_speech)
     for word in words:
         pronunciation_list = pronouncing.phones_for_word(word)
-        try:
-            count = pronouncing.syllable_count(pronunciation_list[0])
-        except IndexError:
-            continue
+        for pronunciation in pronunciation_list:
+            count = pronouncing.syllable_count(pronunciation)
 
-        print(count, word)
-        if skip_plurals and word[-1].lower() == "s" and word[-2] != "s":
-            # Might be plural, just skip it
-            print("Plural? Skip!")
-            continue
+            print(count, word)
+            if skip_plurals and word[-1].lower() == "s" and word[-2] != "s":
+                # Might be plural, just skip it
+                print("Plural? Skip!")
+                continue
 
-        if count == syllables:
-            # Bingo!
-            return word
+            if count == syllables:
+                # Bingo!
+                return word
 
     # Any'll do
     return random.choice(words)
