@@ -201,6 +201,7 @@ def thenewharperlee():
         "{0}'s first chapter, first review: a beguiling journey into the past",
         "Why I'm excited about Harper Lee's new book {0}",
         "Harper Lee's new novel {0} is a bolt from the blue",
+        "{0} by Harper Lee review – a literary curiosity",
         ])
 
     output = intro.format(title)
