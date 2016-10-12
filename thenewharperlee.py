@@ -10,12 +10,14 @@ from __future__ import print_function
 import argparse
 import random
 import inflect  # pip install inflect
+import os.path
 import pronouncing  # pip install pronouncing
 import sys
-import twitter
+import tempfile
+import twitter  # pip install twitter
 import webbrowser
-import yaml
-from wordnik import swagger, WordsApi
+import yaml  # pip install pyyaml
+from wordnik import swagger, WordsApi  # pip install wordnik
 
 import book_cover
 
@@ -50,11 +52,12 @@ def tweet_it(string, credentials, image=None):
     # Create and authorise an app with (read and) write access at:
     # https://dev.twitter.com/apps/new
     # Store credentials in YAML file
-    t = twitter.Twitter(auth=twitter.OAuth(
-        credentials['access_token'],
-        credentials['access_token_secret'],
-        credentials['consumer_key'],
-        credentials['consumer_secret']))
+    auth = twitter.OAuth(
+       credentials['access_token'],
+       credentials['access_token_secret'],
+       credentials['consumer_key'],
+       credentials['consumer_secret'])
+    t = twitter.Twitter(auth=auth)
 
     print("TWEETING THIS:\n", string)
 
@@ -69,13 +72,7 @@ def tweet_it(string, credentials, image=None):
             # First just read images from the web or from files the regular way
             with open(image, "rb") as imagefile:
                 imagedata = imagefile.read()
-            # TODO dedupe auth=OAuth(...)
-            t_up = twitter.Twitter(domain='upload.twitter.com',
-                                   auth=twitter.OAuth(
-                                       credentials['access_token'],
-                                       credentials['access_token_secret'],
-                                       credentials['consumer_key'],
-                                       credentials['consumer_secret']))
+            t_up = twitter.Twitter(domain='upload.twitter.com', auth=auth)
             id_img = t_up.media.upload(media=imagedata)["media_id_string"]
         else:
             id_img = None  # Does t.statuses.update work with this?
@@ -91,7 +88,7 @@ def tweet_it(string, credentials, image=None):
 
 
 def get_random_words_from_wordnik(part_of_speech):
-    """ Get a random word from Wordnik """
+    """ Get 100 random words from Wordnik """
     words = words_api.getRandomWords(includePartOfSpeech=part_of_speech,
                                      limit=100)
 
@@ -146,7 +143,11 @@ def thenewharperlee():
     """ New book title """
     print("Get words from Wordnik...")
     first = random.choice(["To", "Go"])
-    verb = get_random_word("verb-transitive", 1)
+    if random.randint(0, 1):  # 50%
+        verb_syllables = 1
+    else:
+        verb_syllables = None
+    verb = get_random_word("verb-transitive", verb_syllables)
     if first == "To":
         noun_syllables = 3
     else:
@@ -188,7 +189,7 @@ def thenewharperlee():
         "People are going cray for '{0}'",
         "Readers ready to judge '{0}' for themselves",
         "Harper Lee's {0} draws hype and controversy",
-        "Does Harper Lee Really Want {0} to be Published?",
+        "Does Harper Lee Really Want '{0}' to be Published?",
         "Harper Lee’s ‘{0}’ Brings Division and Curiosity to Monroeville, "
         "Ala.",
         "Forget the controversies – '{0}' is worth reading",
@@ -202,6 +203,8 @@ def thenewharperlee():
         "Why I'm excited about Harper Lee's new book {0}",
         "Harper Lee's new novel {0} is a bolt from the blue",
         "{0} by Harper Lee review – a literary curiosity",
+        "Harper Lee readers demanding refunds were expecting far too much "
+        "from {0}",
         ])
 
     output = intro.format(title)
@@ -216,9 +219,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Harper Lee's next book is called...",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        '-o', '--outfile', default="C:/stufftodelete/book_cover.png",
-        help="Book cover image filename")
+#     parser.add_argument(
+#         '-o', '--outfile', default="C:/stufftodelete/book_cover.png",
+#         help="Book cover image filename")
     parser.add_argument(
         '-y', '--yaml',
         # default='/Users/hugo/Dropbox/bin/data/thenewharperlee.yaml',
@@ -241,8 +244,12 @@ if __name__ == "__main__":
 
     tweet, title = thenewharperlee()
 
-    book_cover.book_cover(title, "Harper Lee", args.outfile)
+#     os.mkdir("C:/stufftodelete/")  # quick hack
 
-    tweet_it(tweet, credentials, args.outfile)
+    outfile = os.path.join(tempfile.gettempdir(), "book_cover.png")
+
+    book_cover.book_cover(title, "Harper Lee", outfile)
+
+    tweet_it(tweet, credentials, outfile)
 
 # End of file
