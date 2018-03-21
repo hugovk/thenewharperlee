@@ -148,15 +148,12 @@ def book_cover(title, author, outfile=None):
                         fill=fg_colour)
     top_of_bottom_text = y
 
-    try:
-        img2 = get_an_image(title)
-        w, h = img2.size
-        x = cover_width/2 - w/2
-        y_gap = top_of_bottom_text - bottom_of_top_text
-        y = bottom_of_top_text + y_gap/2 - h/2
-        img.paste(img2, (x, y))
-    except Exception as e:
-        print(str(e))
+    img2 = get_an_image(title)
+    w, h = img2.size
+    x = cover_width/2 - w/2
+    y_gap = top_of_bottom_text - bottom_of_top_text
+    y = bottom_of_top_text + y_gap/2 - h/2
+    img.paste(img2, (x, y))
 
     # img.show()
     if outfile:
