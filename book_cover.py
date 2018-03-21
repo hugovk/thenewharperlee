@@ -85,13 +85,16 @@ def get_an_image(text):
     # Get the second or fourth word
     index = random.choice([1, 3])
     text = text.split()[index]
+    print(text)
+    sort = random.choice(["relevance", "interestingness-desc"])
+    print(sort)
 
     from flickr_search_downloadr import flickr_search_downloadr
 
     filename = flickr_search_downloadr(text,
                                        tags=None,
                                        user_id="internetarchivebookimages",
-                                       sort="relevance",
+                                       sort=sort,
                                        quantity=1,
                                        number=None,
                                        size="m",
